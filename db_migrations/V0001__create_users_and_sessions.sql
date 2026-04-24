@@ -1,0 +1,24 @@
+CREATE TABLE IF NOT EXISTS t_p14749175_krmp_launcher_app.users (
+  id SERIAL PRIMARY KEY,
+  username VARCHAR(32) UNIQUE NOT NULL,
+  email VARCHAR(255) UNIQUE NOT NULL,
+  password_hash VARCHAR(255) NOT NULL,
+  avatar_initials VARCHAR(4) NOT NULL DEFAULT 'USR',
+  rank VARCHAR(64) NOT NULL DEFAULT 'Новичок',
+  vip BOOLEAN NOT NULL DEFAULT FALSE,
+  hours_played INTEGER NOT NULL DEFAULT 0,
+  level INTEGER NOT NULL DEFAULT 1,
+  level_progress INTEGER NOT NULL DEFAULT 0,
+  sessions_count INTEGER NOT NULL DEFAULT 0,
+  money_earned BIGINT NOT NULL DEFAULT 0,
+  km_driven INTEGER NOT NULL DEFAULT 0,
+  reputation INTEGER NOT NULL DEFAULT 0,
+  created_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS t_p14749175_krmp_launcher_app.sessions (
+  id VARCHAR(64) PRIMARY KEY,
+  user_id INTEGER NOT NULL REFERENCES t_p14749175_krmp_launcher_app.users(id),
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  expires_at TIMESTAMP NOT NULL DEFAULT (NOW() + INTERVAL '30 days')
+);

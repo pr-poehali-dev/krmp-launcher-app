@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
 import Icon from "@/components/ui/icon";
+import { useAuth, User } from "@/hooks/useAuth";
+import AuthScreen from "@/components/AuthScreen";
 
 type Tab = "home" | "profile" | "settings" | "help";
 
@@ -160,7 +162,8 @@ function HomeTab() {
   );
 }
 
-function ProfileTab() {
+function ProfileTab({ user }: { user: User }) {
+  const fmt = (n: number) => n.toLocaleString("ru-RU");
   return (
     <div className="space-y-6">
       <div className="glass neon-border rounded-2xl p-6 scanlines relative overflow-hidden">
@@ -168,34 +171,36 @@ function ProfileTab() {
         <div className="relative flex items-center gap-5">
           <div className="relative">
             <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-[#00f5ff] to-[#a855f7] flex items-center justify-center text-3xl font-heading font-black text-black">
-              RK
+              {user.avatar_initials}
             </div>
             <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-[#39ff14] border-2 border-background status-online" />
           </div>
           <div className="flex-1">
-            <h2 className="font-heading font-black text-xl text-white">RoadKing_777</h2>
-            <p className="text-muted-foreground text-sm mb-3">ID: #4892 · VIP Игрок · Ранг: Легенда</p>
+            <h2 className="font-heading font-black text-xl text-white">{user.username}</h2>
+            <p className="text-muted-foreground text-sm mb-3">
+              ID: #{user.id} · {user.vip ? "VIP Игрок · " : ""}{user.rank}
+            </p>
             <div className="flex items-center gap-2">
-              <span className="text-xs text-muted-foreground">Уровень 87</span>
+              <span className="text-xs text-muted-foreground">Уровень {user.level}</span>
               <div className="flex-1 max-w-32">
-                <ProgressBar value={73} />
+                <ProgressBar value={user.level_progress} />
               </div>
-              <span className="text-xs text-[#00f5ff]">73%</span>
+              <span className="text-xs text-[#00f5ff]">{user.level_progress}%</span>
             </div>
           </div>
           <div className="text-right">
-            <div className="text-2xl font-heading font-black text-gradient-cyan">1,842</div>
-            <div className="text-xs text-muted-foreground">часа в игре</div>
+            <div className="text-2xl font-heading font-black text-gradient-cyan">{fmt(user.hours_played)}</div>
+            <div className="text-xs text-muted-foreground">часов в игре</div>
           </div>
         </div>
       </div>
 
       <div className="grid grid-cols-2 gap-3">
         {[
-          { icon: "🎯", label: "Сессий сыграно", value: "3,241" },
-          { icon: "💰", label: "Заработано", value: "$2.4M" },
-          { icon: "🚗", label: "Пройдено км", value: "48,200" },
-          { icon: "⭐", label: "Репутация", value: "9,800" },
+          { icon: "🎯", label: "Сессий сыграно", value: fmt(user.sessions_count) },
+          { icon: "💰", label: "Заработано", value: `$${fmt(user.money_earned)}` },
+          { icon: "🚗", label: "Пройдено км", value: fmt(user.km_driven) },
+          { icon: "⭐", label: "Репутация", value: fmt(user.reputation) },
         ].map((stat, i) => (
           <div key={i} className="glass neon-border rounded-xl p-4 animate-fade-in">
             <div className="text-2xl mb-2">{stat.icon}</div>
@@ -433,10 +438,29 @@ const NAV_ITEMS: { id: Tab; icon: string; label: string }[] = [
 export default function Index() {
   const [activeTab, setActiveTab] = useState<Tab>("home");
   const [mounted, setMounted] = useState(false);
+  const { user, loading, error, setError, login, register, logout } = useAuth();
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  useEffect(() => { setMounted(true); }, []);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen gradient-bg flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#00f5ff] to-[#a855f7] flex items-center justify-center mx-auto mb-4">
+            <Icon name="Gamepad2" size={22} className="text-black" />
+          </div>
+          <div className="flex items-center gap-2 text-muted-foreground text-sm">
+            <Icon name="Loader2" size={14} className="animate-spin" />
+            Загрузка...
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <AuthScreen onLogin={login} onRegister={register} error={error} setError={setError} />;
+  }
 
   return (
     <div className="min-h-screen gradient-bg flex flex-col">
@@ -453,9 +477,19 @@ export default function Index() {
             <div className="w-1.5 h-1.5 rounded-full status-online" />
             <span className="text-xs text-white/70">3,842 онлайн</span>
           </div>
-          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#00f5ff] to-[#a855f7] flex items-center justify-center text-xs font-heading font-black text-black">
-            RK
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#00f5ff] to-[#a855f7] flex items-center justify-center text-xs font-heading font-black text-black">
+              {user.avatar_initials}
+            </div>
+            <span className="text-xs text-white/70 hidden sm:block">{user.username}</span>
           </div>
+          <button
+            onClick={logout}
+            title="Выйти"
+            className="w-8 h-8 rounded-lg bg-white/5 hover:bg-red-500/20 border border-white/10 hover:border-red-500/30 flex items-center justify-center transition-all text-muted-foreground hover:text-red-400"
+          >
+            <Icon name="LogOut" size={14} />
+          </button>
         </div>
       </header>
 
@@ -491,7 +525,7 @@ export default function Index() {
 
             <div key={activeTab} className={mounted ? "animate-fade-in" : "opacity-0"}>
               {activeTab === "home" && <HomeTab />}
-              {activeTab === "profile" && <ProfileTab />}
+              {activeTab === "profile" && <ProfileTab user={user} />}
               {activeTab === "settings" && <SettingsTab />}
               {activeTab === "help" && <HelpTab />}
             </div>
